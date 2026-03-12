@@ -2,45 +2,55 @@ import socket
 import threading
 
 clientes = []
+clientes_lock = threading.Lock()
 
-def broadcast(mensaje, conn_origen):
-    for cliente in clientes:
-        if cliente != conn_origen:
+def broadcast(mensaje, excluded=None):
+    with clientes_lock:
+        for cliente in clientes[:]:
+            if cliente is excluded:
+                continue
             try:
                 cliente.sendall(mensaje)
-            except:
+            except (OSError, ConnectionResetError):
                 clientes.remove(cliente)
+                cliente.close()
 
 def manejar_cliente(conn, addr):
-    nombre = conn.recv(1024).decode()
-    print(f"{nombre} se ha conectado desde {addr}")
+    with conn:
+        nombre = conn.recv(1024).decode().strip()
+        if not nombre:
+            return
 
-    mensaje_bienvenida = f"{nombre} se unió al chat\n".encode()
-    broadcast(mensaje_bienvenida, conn)
+        print(f"{nombre} se ha conectado desde {addr}")
+        with clientes_lock:
+            clientes.append(conn)
 
-    while True:
-        try:
-            data = conn.recv(1024)
-            if not data:
+        broadcast(f"{nombre} se unió al chat\n".encode(), excluded=conn)
+
+        while True:
+            try:
+                data = conn.recv(1024)
+                if not data:
+                    break
+                mensaje = f"{nombre}: {data.decode()}"
+                print(mensaje)
+                broadcast(mensaje.encode(), excluded=conn)
+            except (OSError, ConnectionResetError):
                 break
 
-            mensaje = f"{nombre}: {data.decode()}"
-            print(mensaje)
+        with clientes_lock:
+            if conn in clientes:
+                clientes.remove(conn)
 
-            broadcast(mensaje.encode(), conn)
-
-        except:
-            break
-
-    print(f"{nombre} se desconectó")
-    clientes.remove(conn)
-    conn.close()
+        broadcast(f"{nombre} se desconectó\n".encode(), excluded=conn)
+        print(f"{nombre} se desconectó")
 
 def servidor():
     host = '0.0.0.0'
     port = 12345
 
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     server_socket.bind((host, port))
     server_socket.listen()
 
@@ -48,9 +58,7 @@ def servidor():
 
     while True:
         conn, addr = server_socket.accept()
-        clientes.append(conn)
-
-        hilo = threading.Thread(target=manejar_cliente, args=(conn, addr))
+        hilo = threading.Thread(target=manejar_cliente, args=(conn, addr), daemon=True)
         hilo.start()
 
 if __name__ == "__main__":

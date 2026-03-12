@@ -1,46 +1,41 @@
 import socket
 import threading
-import sys
 
 def recibir_mensajes(client_socket):
     while True:
         try:
             data = client_socket.recv(1024)
             if not data:
-                print("\n[SERVIDOR] Conexión cerrada.")
+                print("\n[Servidor cerrado]\n")
                 break
-            print(f"\n{data.decode()}\n>> ", end="")
-        except:
+            print(f"\n{data.decode().strip()}\n>> ", end="")
+        except (OSError, ConnectionResetError):
             break
 
-def enviar_mensajes(client_socket):
-    while True:
-        mensaje = input(">> ")
-        if mensaje.lower() == 'salir':
-            client_socket.close()
-            sys.exit()
-        client_socket.sendall(mensaje.encode())
-
-def cliente():
-    # MAÑANA: Cambia esto por la IP de tu compañera
-    host = '127.0.0.1' 
-    port = 12345
-
+def cliente(host='127.0.0.1', port=12345):
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         client_socket.connect((host, port))
-    except Exception as e:
-        print(f"No se pudo conectar al servidor: {e}")
+    except socket.error as exc:
+        print(f"No se pudo conectar al servidor: {exc}")
         return
 
-    nombre = input("Ingresa tu nombre : ")
+    nombre = input("Ingresa tu nombre: ").strip() or "Anonimo"
     client_socket.sendall(nombre.encode())
 
-    hilo_recibir = threading.Thread(target=recibir_mensajes, args=(client_socket,), daemon=True)
-    hilo_recibir.start()
+    threading.Thread(target=recibir_mensajes, args=(client_socket,), daemon=True).start()
 
     print("--- Conectado al Chat Grupal ---")
-    enviar_mensajes(client_socket)
+    try:
+        while True:
+            mensaje = input(">> ")
+            if mensaje.lower() == 'salir':
+                break
+            client_socket.sendall(mensaje.encode())
+    except (KeyboardInterrupt, EOFError):
+        pass
+    finally:
+        client_socket.close()
 
 if __name__ == "__main__":
     cliente()
