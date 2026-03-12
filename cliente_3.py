@@ -33,7 +33,7 @@ def cliente():
         print(f"No se pudo conectar al servidor: {e}")
         return
 
-    nombre = input("Ingresa tu nombre (Cliente 3 - Roxana): ")
+    nombre = input("Ingresa tu nombre : ")
     client_socket.sendall(nombre.encode())
 
     hilo_recibir = threading.Thread(target=recibir_mensajes, args=(client_socket,), daemon=True)
