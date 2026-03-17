@@ -23,7 +23,7 @@ def enviar_mensajes(client_socket):
 
 def cliente():
     # MAÑANA: Cambia esto por la IP de tu compañera
-    host = '127.0.0.1' 
+    host = '192.168.218.179' 
     port = 12345
 
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
