@@ -41,14 +41,18 @@ No necesitas instalar paquetes extra. Solo Python 3 y el módulo estándar `sock
 
 ```bash
 python servidor.py
-Abre otra terminal y ejecuta un cliente local para pruebas:
+```
 
+Abre otra terminal y ejecuta un cliente local para pruebas:
+```
 Bash
 python cliente_3.py
+```
 Si quieres conectar otro equipo de la red, utiliza el cliente configurado para IP externa:
-
+```
 Bash
 python Cliente2.py
+```
 Qué debes escribir
 Al iniciar el cliente, primero escribe tu nombre. Después puedes enviar mensajes libremente. Para salir, escribe salir.
 
